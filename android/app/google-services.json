@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "741910018297",
+    "project_id": "canis-academia-proyecto-final",
+    "storage_bucket": "canis-academia-proyecto-final.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:741910018297:android:eab455004c65d0f3ae8a28",
+        "android_client_info": {
+          "package_name": "com.cannis.academia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpQwi8ztxDxOWGOA3RCXpY07sSAQWTdmY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
