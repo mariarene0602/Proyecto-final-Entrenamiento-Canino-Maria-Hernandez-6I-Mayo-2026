@@ -1,15 +1,52 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/mascota_provider.dart';
+import '../providers/sesion_provider.dart';
+import '../providers/entrenador_provider.dart';
+import '../models/mascota_model.dart';
+import '../models/entrenador_model.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.user != null) {
+        final userId = authProvider.user!.uid;
+        
+        // Load pets first, then load sessions based on pet IDs
+        final mascotaProvider = Provider.of<MascotaProvider>(context, listen: false);
+        mascotaProvider.loadMascotas(userId).then((_) {
+          if (mounted) {
+            final dogIds = mascotaProvider.mascotas.map((d) => d.id).toList();
+            Provider.of<SesionProvider>(context, listen: false).loadSesiones(dogIds);
+          }
+        });
+
+        // Load trainers
+        Provider.of<EntrenadorProvider>(context, listen: false).loadEntrenadores();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final sesionProvider = Provider.of<SesionProvider>(context);
+    final mascotaProvider = Provider.of<MascotaProvider>(context);
+    final entrenadorProvider = Provider.of<EntrenadorProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -218,46 +255,11 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.azulMarino.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.schedule,
-                        color: AppColors.azulMarino,
-                        size: 30,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'No tienes sesiones programadas',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.azulMarino,
-                            ),
-                          ),
-                          Text(
-                            'Reserva tu primera sesión ahora',
-                            style: TextStyle(color: AppColors.textoClaro),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, color: AppColors.dorado),
-                  ],
-                ),
-              ),
+            _buildUpcomingSessionsList(
+              context,
+              sesionProvider,
+              mascotaProvider,
+              entrenadorProvider,
             ),
           ],
         ),
@@ -324,6 +326,131 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildUpcomingSessionsList(
+    BuildContext context,
+    SesionProvider sesionProvider,
+    MascotaProvider mascotaProvider,
+    EntrenadorProvider entrenadorProvider,
+  ) {
+    if (sesionProvider.isLoading || mascotaProvider.isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: CircularProgressIndicator(color: AppColors.dorado),
+        ),
+      );
+    }
+
+    final upcoming = sesionProvider.sesiones.where((s) {
+      return s.estado == 'programada' || s.estado == 'en_curso';
+    }).toList();
+
+    // Sort by date ascending
+    upcoming.sort((a, b) => a.fecha.compareTo(b.fecha));
+
+    if (upcoming.isEmpty) {
+      return Card(
+        child: InkWell(
+          onTap: () => Navigator.pushNamed(context, '/reservations'),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.azulMarino.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.schedule,
+                    color: AppColors.azulMarino,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'No tienes sesiones programadas',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.azulMarino,
+                        ),
+                      ),
+                      Text(
+                        'Reserva tu primera sesión ahora',
+                        style: TextStyle(color: AppColors.textoClaro),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.dorado),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: upcoming.length > 3 ? 3 : upcoming.length, // Show up to 3 upcoming sessions
+      itemBuilder: (context, index) {
+        final session = upcoming[index];
+        final pet = mascotaProvider.mascotas.firstWhere(
+          (p) => p.id == session.mascotaId,
+          orElse: () => MascotaModel(
+            id: '',
+            nombre: 'Mascota',
+            especie: 'perro',
+            raza: '',
+            edad: 0,
+            peso: 0,
+            clienteId: '',
+            fechaRegistro: DateTime.now(),
+          ),
+        );
+        final trainer = entrenadorProvider.entrenadores.firstWhere(
+          (e) => e.id == session.entrenadorId,
+          orElse: () => EntrenadorModel(
+            id: '',
+            nombre: 'Entrenador',
+            apellido: '',
+            email: '',
+            telefono: '',
+            especialidad: '',
+            fechaIngreso: DateTime.now(),
+          ),
+        );
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            onTap: () => Navigator.pushNamed(context, '/training'),
+            leading: const CircleAvatar(
+              backgroundColor: AppColors.azulMarinoClaro,
+              child: Icon(Icons.pets, color: AppColors.dorado),
+            ),
+            title: Text(
+              '${pet.nombre} - ${session.estadoFormateado}',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.azulMarino),
+            ),
+            subtitle: Text(
+              '${DateFormat('dd/MM/yyyy').format(session.fecha)} • ${session.horarioFormateado}\nEntrenador: ${trainer.nombreCompleto}',
+              style: const TextStyle(color: AppColors.textoClaro),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: AppColors.dorado),
+          ),
+        );
+      },
     );
   }
 }

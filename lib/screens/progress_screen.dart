@@ -193,19 +193,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Sesión del ${progreso.fecha.day}/${progreso.fecha.month}/${progreso.fecha.year}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.azulMarino, fontSize: 16),
-                    ),
-                    if (progreso.videoUrl != null)
-                      IconButton(
-                        icon: const Icon(Icons.play_circle_fill, color: AppColors.dorado, size: 28),
-                        onPressed: () => _simulateVideoPlay(context, progreso.videoUrl!),
-                      ),
-                  ],
+                Text(
+                  'Sesión del ${progreso.fecha.day}/${progreso.fecha.month}/${progreso.fecha.year}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.azulMarino, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -308,37 +298,4 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  void _simulateVideoPlay(BuildContext context, String url) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.azulMarino,
-        title: const Text('Video de Adiestramiento', style: TextStyle(color: AppColors.blanco)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: 180,
-              color: Colors.black,
-              child: const Center(
-                child: Icon(Icons.play_circle_outline, size: 64, color: AppColors.dorado),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Reproduciendo avance de adiestramiento en video...',
-              style: TextStyle(color: AppColors.blanco, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar', style: TextStyle(color: AppColors.dorado)),
-          ),
-        ],
-      ),
-    );
-  }
 }

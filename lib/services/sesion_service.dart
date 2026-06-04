@@ -35,6 +35,13 @@ class SesionService {
     });
   }
 
+  // Actualizar fecha de la sesión
+  Future<void> updateFecha(String id, DateTime fecha) async {
+    await _firestore.collection('SESIONES').doc(id).update({
+      'fecha': Timestamp.fromDate(fecha),
+    });
+  }
+
   // Eliminar/Cancelar sesión
   Future<void> cancelarSesion(String id) async {
     await _firestore.collection('SESIONES').doc(id).update({

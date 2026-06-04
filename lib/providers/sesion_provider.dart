@@ -39,6 +39,22 @@ class SesionProvider with ChangeNotifier {
     }
   }
 
+  Future<void> updateFecha(String id, DateTime fecha) async {
+    try {
+      await _sesionService.updateFecha(id, fecha);
+    } catch (e) {
+      debugPrint('Error updating session date: $e');
+    }
+  }
+
+  Future<void> addSesion(SesionModel sesion) async {
+    try {
+      await _sesionService.addSesion(sesion);
+    } catch (e) {
+      debugPrint('Error adding session: $e');
+    }
+  }
+
   Future<void> cancelarSesion(String id) async {
     try {
       await _sesionService.cancelarSesion(id);
